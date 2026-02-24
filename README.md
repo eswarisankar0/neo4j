@@ -113,3 +113,18 @@ DELETE /memory/{memory_id}
 ```
 GET /
 ✅ Expected: {"status": "running", "message": "AI Assistant API is live ✅"}
+
+
+
+
+
+
+
+
+
+
+
+
+http://localhost:8000/docs
+**
+Swagger docs**
