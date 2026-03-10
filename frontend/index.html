@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AXON — Context-Aware AI Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--surface:#0f0f1a;--surface2:#161624;
+  --border:#252538;--border2:#303048;
+  --accent:#00e5a0;--accent-dim:#003d2b;--accent-glow:rgba(0,229,160,.18);
+  --text:#e2e2f0;--muted:#5a5a78;--muted2:#7a7a98;
+  --red:#ff4d6d;--yellow:#fbbf24;--purple:#a78bfa;
+  --font-h:'Syne',sans-serif;--font-m:'DM Mono',monospace;
+  --r:10px;--r2:16px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-m);overflow:hidden}
+.app{display:grid;grid-template-columns:250px 1fr 270px;grid-template-rows:52px 1fr;height:100vh}
+
+/* TOPBAR */
+.topbar{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);
+  animation:slideDown .5s ease both
+}
+.logo{font-family:var(--font-h);font-size:18px;font-weight:800;letter-spacing:5px;color:var(--accent)}
+.logo-sub{font-weight:400;font-size:11px;color:var(--muted);letter-spacing:2px;font-family:var(--font-m)}
+.neo-badge{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:10px;color:var(--muted2);letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.neo-dot{width:7px;height:7px;border-radius:50%;background:#4db8ff;box-shadow:0 0 8px #4db8ff;animation:pulse 2s infinite}
+.user-name{font-size:12px;color:var(--text);font-weight:500}
+
+/* SIDEBAR LEFT */
+.sidebar-l{background:var(--surface);border-right:1px solid var(--border);padding:16px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;animation:slideLeft .5s ease both}
+.section-hd{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 8px;text-align:center}
+.stat-n{font-family:var(--font-h);font-size:22px;font-weight:800;color:var(--accent);line-height:1}
+.stat-l{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+
+/* Tasks */
+.task-list{display:flex;flex-direction:column;gap:5px;min-height:10px}
+.task{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:7px;transition:border-color .2s,transform .15s}
+.task:hover{border-color:var(--border2);transform:translateX(2px)}
+.task.done{opacity:.4}
+.task-check{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--accent);flex-shrink:0;cursor:pointer;transition:background .2s}
+.task.done .task-check{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.pdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ph{background:var(--red)}.pm{background:var(--yellow)}.pl{background:var(--accent)}
+.task-txt{font-size:10.5px;flex:1;line-height:1.4}
+.task-del{color:var(--muted);font-size:14px;cursor:pointer;transition:color .2s;flex-shrink:0}
+.task-del:hover{color:var(--red)}
+.add-row{display:flex;gap:6px;margin-top:8px}
+.add-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-m);font-size:10.5px;padding:6px 9px;outline:none;transition:border-color .2s}
+.add-row input:focus{border-color:var(--accent)}
+.btn-icon{background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 10px;font-size:15px;cursor:pointer;transition:all .2s}
+.btn-icon:hover{background:var(--accent);color:var(--bg)}
+.empty-note{color:var(--muted);font-size:10.5px;font-style:italic;padding:4px 0}
+
+/* CHAT */
+.chat{display:flex;flex-direction:column;background:var(--bg);animation:fadeIn .5s ease .1s both}
+.msgs{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.msgs::-webkit-scrollbar{width:3px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.msg{display:flex;gap:9px;max-width:78%;animation:msgIn .3s ease both}
+.msg.u{align-self:flex-end;flex-direction:row-reverse}
+.av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-h);font-weight:700;letter-spacing:1px}
+.msg.b .av{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)}
+.msg.u .av{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.bubble{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 13px;font-size:12.5px;line-height:1.65}
+.msg.u .bubble{background:var(--accent-dim);border-color:var(--accent)}
+.ts{font-size:9px;color:var(--muted);margin-top:3px}
+.msg.u .ts{text-align:right}
+.typing-wrap{display:flex;gap:4px;align-items:center;padding:12px 13px}
+.typing-wrap span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce .9s infinite}
+.typing-wrap span:nth-child(2){animation-delay:.15s}
+.typing-wrap span:nth-child(3){animation-delay:.3s}
+.input-bar{padding:14px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:10px;align-items:flex-end}
+.input-bar textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:var(--font-m);font-size:12.5px;padding:11px 14px;outline:none;resize:none;line-height:1.5;max-height:100px;transition:border-color .2s}
+.input-bar textarea:focus{border-color:var(--accent)}
+.send{width:42px;height:42px;background:var(--accent);border:none;border-radius:var(--r);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .2s;box-shadow:0 0 16px var(--accent-glow);color:var(--bg)}
+.send:hover{transform:scale(1.08)}
+.send:active{transform:scale(.95)}
+
+/* SIDEBAR RIGHT */
+.sidebar-r{background:var(--surface);border-left:1px solid var(--border);padding:16px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;animation:slideRight .5s ease both}
+.mem-list{display:flex;flex-direction:column;gap:7px;min-height:10px}
+.mem{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;font-size:11px;line-height:1.5;position:relative;transition:border-color .2s}
+.mem:hover{border-color:var(--border2)}
+.mem-type{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:500}
+.mem-type.habit{color:var(--accent)}.mem-type.fact{color:var(--yellow)}.mem-type.context{color:var(--purple)}
+.mem-del{position:absolute;top:7px;right:8px;color:var(--muted);cursor:pointer;font-size:13px;transition:color .2s}
+.mem-del:hover{color:var(--red)}
+.new-mem{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.new-mem input,.new-mem select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-m);font-size:10.5px;padding:6px 9px;outline:none;transition:border-color .2s}
+.new-mem input:focus,.new-mem select:focus{border-color:var(--accent)}
+.new-mem select option{background:var(--surface2)}
+.btn-full{background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:7px;font-size:10px;font-family:var(--font-m);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+.btn-full:hover{background:var(--accent);color:var(--bg)}
+.pref-rows{display:flex;flex-direction:column;gap:6px}
+.pref-row{display:flex;justify-content:space-between;align-items:center}
+.pref-k{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.pref-v{font-size:11px;color:var(--accent);font-weight:500}
+
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+@keyframes slideRight{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes bounce{0%,80%,100%{transform:scale(.7)}40%{transform:scale(1.1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="logo">AXON <span class="logo-sub">/ AI ASSISTANT</span></div>
+  <div class="neo-badge"><div class="neo-dot"></div>Neo4j · bolt://localhost:7687</div>
+  <span class="user-name" id="uname">Loading...</span>
+</header>
+
+<aside class="sidebar-l">
+  <div>
+    <div class="section-hd">Overview</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-n" id="s-tasks">–</div><div class="stat-l">Tasks</div></div>
+      <div class="stat"><div class="stat-n" id="s-pend">–</div><div class="stat-l">Pending</div></div>
+      <div class="stat"><div class="stat-n" id="s-mem">–</div><div class="stat-l">Memories</div></div>
+      <div class="stat"><div class="stat-n" id="s-conv">–</div><div class="stat-l">Chats</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="section-hd">Tasks</div>
+    <div class="task-list" id="task-list"><div class="empty-note">Loading...</div></div>
+    <div class="add-row">
+      <input id="task-inp" placeholder="New task…" onkeydown="if(event.key==='Enter')addTask()"/>
+      <button class="btn-icon" onclick="addTask()">+</button>
+    </div>
+  </div>
+</aside>
+
+<main class="chat">
+  <div class="msgs" id="msgs"></div>
+  <div class="input-bar">
+    <textarea id="cin" rows="1" placeholder="Message AXON… (try: 'hi', 'remind me to submit report', 'I usually sleep at 11pm')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+    <button class="send" onclick="send()">↑</button>
+  </div>
+</main>
+
+<aside class="sidebar-r">
+  <div>
+    <div class="section-hd">Memory</div>
+    <div class="mem-list" id="mem-list"><div class="empty-note">Loading...</div></div>
+    <div class="new-mem">
+      <input id="mem-inp" placeholder="Store a memory…"/>
+      <select id="mem-type">
+        <option value="habit">Habit</option>
+        <option value="fact">Fact</option>
+        <option value="context">Context</option>
+      </select>
+      <button class="btn-full" onclick="addMem()">+ Store in Neo4j</button>
+    </div>
+  </div>
+  <div>
+    <div class="section-hd">Preferences</div>
+    <div class="pref-rows" id="pref-rows"><div class="empty-note">Loading...</div></div>
+  </div>
+</aside>
+
+</div>
+<script>
+  const API = "http://127.0.0.1:5001/api";
+  const UID = "user-001";
+
+  async function init() {
+    await loadUser();
+    await Promise.all([loadStats(), loadTasks(), loadMemory(), loadPreferences()]);
+    // NO history loaded — start fresh every time
+    appendMsg("b", "Hello! I'm <strong>AXON</strong>, your context-aware AI assistant powered by Neo4j. Try saying <em>hi</em>!");
+  }
+
+  async function loadUser() {
+    try {
+      const r = await fetch(`${API}/user/${UID}`);
+      const d = await r.json();
+      document.getElementById("uname").textContent = d.name || "Alex";
+    } catch(e) {
+      document.getElementById("uname").textContent = "Alex";
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const r = await fetch(`${API}/user/${UID}/stats`);
+      const d = await r.json();
+      document.getElementById("s-tasks").textContent = d.totalTasks    ?? "–";
+      document.getElementById("s-pend").textContent  = d.pendingTasks  ?? "–";
+      document.getElementById("s-mem").textContent   = d.memories      ?? "–";
+      document.getElementById("s-conv").textContent  = d.conversations ?? "–";
+    } catch(e) {}
+  }
+
+  async function loadTasks() {
+    try {
+      const r = await fetch(`${API}/user/${UID}/tasks`);
+      const tasks = await r.json();
+      renderTasks(Array.isArray(tasks) ? tasks : []);
+    } catch(e) {
+      document.getElementById("task-list").innerHTML = '<div class="empty-note">No tasks yet.</div>';
+    }
+  }
+
+  function renderTasks(tasks) {
+    const el = document.getElementById("task-list");
+    if (!tasks.length) { el.innerHTML = '<div class="empty-note">No tasks yet.</div>'; return; }
+    el.innerHTML = tasks.slice(0,8).map(t => `
+      <div class="task ${t.status==='completed'?'done':''}">
+        <div class="task-check" onclick="toggleTask('${t.id}','${t.status}')"></div>
+        <div class="pdot p${(t.priority||'medium')[0]}"></div>
+        <div class="task-txt">${t.title}</div>
+        <div class="task-del" onclick="delTask('${t.id}')">×</div>
+      </div>`).join("");
+  }
+
+  async function addTask() {
+    const inp = document.getElementById("task-inp");
+    const v = inp.value.trim(); if (!v) return;
+    try {
+      await fetch(`${API}/user/${UID}/tasks`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({title:v, priority:"medium"})
+      });
+      inp.value = "";
+      await loadTasks(); await loadStats();
+    } catch(e) {}
+  }
+
+  async function toggleTask(id, status) {
+    try {
+      await fetch(`${API}/task/${id}`, {
+        method:"PUT", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({status: status==="completed"?"pending":"completed"})
+      });
+      await loadTasks(); await loadStats();
+    } catch(e) {}
+  }
+
+  async function delTask(id) {
+    try {
+      await fetch(`${API}/task/${id}`, {method:"DELETE"});
+      await loadTasks(); await loadStats();
+    } catch(e) {}
+  }
+
+  async function loadMemory() {
+    try {
+      const r = await fetch(`${API}/user/${UID}/memory`);
+      const mems = await r.json();
+      renderMemory(Array.isArray(mems) ? mems : []);
+    } catch(e) {
+      document.getElementById("mem-list").innerHTML = '<div class="empty-note">No memories yet.</div>';
+    }
+  }
+
+  function renderMemory(mems) {
+    const el = document.getElementById("mem-list");
+    if (!mems.length) { el.innerHTML = '<div class="empty-note">No memories yet.</div>'; return; }
+    el.innerHTML = mems.slice(0,6).map(m => `
+      <div class="mem">
+        <div class="mem-type ${m.type||'fact'}">${m.type||'fact'}</div>
+        <div>${m.content}</div>
+        <div class="mem-del" onclick="delMem('${m.id}')">×</div>
+      </div>`).join("");
+  }
+
+  async function addMem() {
+    const c  = document.getElementById("mem-inp").value.trim();
+    const tp = document.getElementById("mem-type").value;
+    if (!c) return;
+    try {
+      await fetch(`${API}/user/${UID}/memory`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({content:c, type:tp})
+      });
+      document.getElementById("mem-inp").value = "";
+      await loadMemory(); await loadStats();
+    } catch(e) {}
+  }
+
+  async function delMem(id) {
+    try {
+      await fetch(`${API}/memory/${id}`, {method:"DELETE"});
+      await loadMemory(); await loadStats();
+    } catch(e) {}
+  }
+
+  async function loadPreferences() {
+    try {
+      const r = await fetch(`${API}/user/${UID}/preferences`);
+      const prefs = await r.json();
+      const el = document.getElementById("pref-rows");
+      if (!Array.isArray(prefs) || !prefs.length) {
+        el.innerHTML = '<div class="empty-note">No preferences set.</div>'; return;
+      }
+      el.innerHTML = prefs.map(p => `
+        <div class="pref-row">
+          <span class="pref-k">${p.category}</span>
+          <span class="pref-v">${p.value}</span>
+        </div>`).join("");
+    } catch(e) {
+      document.getElementById("pref-rows").innerHTML = '<div class="empty-note">No preferences set.</div>';
+    }
+  }
+
+  async function send() {
+    const ta  = document.getElementById("cin");
+    const msg = ta.value.trim(); if (!msg) return;
+    ta.value = ""; ta.style.height = "";
+    appendMsg("u", msg);
+    showTyping();
+    try {
+      const r = await fetch(`${API}/user/${UID}/chat`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({message: msg})
+      });
+      hideTyping();
+      const d = await r.json();
+      appendMsg("b", d.reply || "Sorry, something went wrong.");
+    } catch(e) {
+      hideTyping();
+      appendMsg("b", "⚠️ Cannot reach Flask. Make sure <strong>python app.py</strong> is running on port 5001.");
+    }
+    await Promise.all([loadStats(), loadTasks(), loadMemory()]);
+  }
+
+  function appendMsg(role, text, ts) {
+    const wrap = document.getElementById("msgs");
+    const time = ts
+      ? new Date(ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})
+      : new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    const d = document.createElement("div");
+    d.className = `msg ${role}`;
+    d.innerHTML = `
+      <div class="av">${role==="u"?"ME":"AX"}</div>
+      <div>
+        <div class="bubble">${text}</div>
+        <div class="ts">${time}</div>
+      </div>`;
+    wrap.appendChild(d);
+    scrollBottom();
+  }
+
+  let typingEl = null;
+  function showTyping() {
+    const wrap = document.getElementById("msgs");
+    typingEl = document.createElement("div");
+    typingEl.className = "msg b";
+    typingEl.innerHTML = `<div class="av">AX</div><div class="bubble"><div class="typing-wrap"><span></span><span></span><span></span></div></div>`;
+    wrap.appendChild(typingEl);
+    scrollBottom();
+  }
+  function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+  function scrollBottom() { const el = document.getElementById("msgs"); el.scrollTop = el.scrollHeight; }
+
+  document.getElementById("cin").addEventListener("input", function() {
+    this.style.height = "";
+    this.style.height = Math.min(this.scrollHeight, 100) + "px";
+  });
+
+  init();
+</script>
+</body>
+</html>
